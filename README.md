@@ -40,3 +40,10 @@ Some math for understanding stuff:
 Log loss: y=0,1 ; -(ylog(p) + (1-y)log(p))
 Brier score: sum of (p-y)² : each prediction is a probability, and we compare it to the actual value.
 
+
+Chose à faire : classification randomforest en classant en 2 catégories : 0-5 et 6-10 pour les vins bons et mauvais
+
+rég logi
+couper en deux de 05 et 6 10
+randomforest bien pour des trucs ordinaux
+10 régressions logistiques : pour prédire chaque qualité de vin ; puis on regarde la qualité qui a la plus forte proba

@@ -7,7 +7,20 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# Install required libraries
+library(tidyverse)
+library(randomForest)
 ```
+
+```{r importing_dataset, include=FALSE}
+# Importing the dataset
+read.csv("dataset/winequality-white.csv")
+
+# First few columns and summary
+
+```
+
 
 use the pairs function
 see readme for more to do
