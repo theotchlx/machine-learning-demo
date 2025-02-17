@@ -10,24 +10,33 @@ First things first, we need to understand the dataset we are working with.
 
 ## Predicting the target variable
 
-The final goal is to predict the target variable, which is wine quality. We will use machine learning algorithms to predict this target variable.
+The final goal is to predict the target variable, which is wine quality. We will use machine learning algorithms to predict this target variable.  
+For each method we use, we will explain our understanding of how it works, its results, and how they compare to other methods.
 
+We will use the following prediction algorithms:
 
-Nos critères de classification :
--> Metrics
-    - Log loss y=0,1 ; -(ylog(p) + (1-y)log(p))
-    - Brier score somme de (p-y)² : on compare chaque val de y à la probabilité
-    - Accuracy
--> Si régression (au lieu de classification) :
+- Random Forest
+- (Gradient Boosting)
+
+We will use the following classification criteria:
+
+- Log loss
+- Brier score
+- Accuracy
+
+For regression, we will use:
+
 - MSE
-- R² ; R² ajusté
+- R²
 
-Tout ça c'est des métriques qu'on peut avoir avec des randomforest. Faire au moins des randomforest, sinon essayer de faire du gradient boosting, etc.
+These are all metrics that we can get with random forests. We will at least use random forests, but we may also try to use gradient boosting, or other methods if we have time.
 
-Rajouter ce qu'on aime si on trouve des trucs cools aussi.
-Montrer qu'on comprend un minimum ce que l'on fait.
+## Report presentation
+
+We will present our work in an Rmarkdown report. We will use this report as a support for our oral presentation, including visualizations. We may also use slides.
 
 
-Faire un jupyter notebook ou un rmarkdown
-Que ça soit visuel pour présenter à l'oral. Des slides ou utiliser le rapport rmarkdown en tant que support ou défiler le jupyter notebook.
+Some math for understanding stuff:
+Log loss: y=0,1 ; -(ylog(p) + (1-y)log(p))
+Brier score: sum of (p-y)² : each prediction is a probability, and we compare it to the actual value.
 
