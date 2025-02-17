@@ -1,4 +1,13 @@
+---
+title: "Wine dataset analysis"
+author: "BROINE Thomas, BRONSIN Baptiste, TCHILINGUIRIAN Théo"
+date: "2025-02-17"
+output: pdf_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 use the pairs function
 see readme for more to do
