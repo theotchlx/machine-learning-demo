@@ -1,0 +1,95 @@
+---
+title: "Analyse des Vins Blancs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(knitr)
+library(dplyr)
+library(caret)
+library(randomForest)
+library(corrplot)
+```
+
+```{r}
+# Charger le jeu de données
+winequality_white <- read_delim("dataset/winequality-white.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
+
+
+# Normaliser les noms des colonnes
+colnames(winequality_white) <- make.names(colnames(winequality_white))
+
+print(colnames(winequality_white))
+
+# Afficher les dernières lignes du jeu de données
+kable(tail(winequality_white))
+
+# Statistiques descriptives
+summary(winequality_white)
+
+# Calculer la matrice de corrélation
+correlation_matrix <- cor(winequality_white)
+
+# Visualiser la matrice de corrélation
+corrplot(correlation_matrix, method = "circle")
+
+# Test de normalité (Shapiro-Wilk)
+shapiro.test(winequality_white$quality)
+
+# Créer une variable binaire pour la qualité
+winequality_white$quality_binary <- ifelse(winequality_white$quality >= 6, "Good", "Bad")
+
+# Effectuer le test t de Student
+t.test(`alcohol` ~ quality_binary, data = winequality_white)
+```
+
+```{r}
+# Séparer les données en ensembles d'entraînement et de test
+set.seed(123)
+trainIndex <- createDataPartition(winequality_white$quality, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+wineTrain <- winequality_white[ trainIndex,]
+wineTest  <- winequality_white[-trainIndex,]
+
+dim(wineTrain)
+dim(wineTest)
+```
+
+```{r}
+# Entraîner le modèle de forêts aléatoires
+model <- randomForest(quality ~ ., data = wineTrain)
+
+# Prédire sur l'ensemble de test
+predictions <- predict(model, wineTest)
+
+# Évaluer le modèle
+eval <- postResample(pred = predictions, obs = wineTest$quality)
+```
+
+## Description
+
+### RMSE
+Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
+
+### Rsquared
+Le coefficient de détermination, ou R-squared, représente la proportion de la variance de la variable dépendante qui est prévisible à partir des variables indépendantes. Un R-squared de 1 signifie que le modèle explique parfaitement la variance des données, tandis qu'un R-squared de 0 signifie que le modèle n'explique aucune variance. Ici, la valeur est de `r round(eval["Rsquared"], 4)`, indiquant que le modèle explique environ `r round(eval["Rsquared"] * 100, 2)`% de la variance dans la qualité du vin.
+
+### MAE
+Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
+
+```{r}
+# Importer les variables importantes
+importance(model)
+varImpPlot(model)
+```
+
+
+
+
+
+
+
+
+
