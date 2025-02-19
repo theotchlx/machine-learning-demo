@@ -2,7 +2,9 @@
 title: "Wine dataset analysis"
 author: "BROINE Thomas, BRONSIN Baptiste, TCHILINGUIRIAN Théo"
 date: "2025-02-17"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +23,21 @@ read.csv("dataset/winequality-white.csv")
 
 ```
 
+## Dataset analysis
+
+We observe that every variable is quantitative.
+
+- **fixed acidity** g(tartaric acid)/dm^3
+- **volatile acidity** g(acetic acid)/dm^3
+- **Citric acid** g/dm^3
+- **Residual sugar** g/dm^3
+- **Chlorides** g(sodium chloride)/dm^3
+- **Free sulfur dioxide** mg/dm^3
+- **Total sulfur dioxide** mg/dm^3
+- **Density** g/cm^3
+- **pH**
+- **Sulphates** g(potassium sulphate)/dm^3
+- **Alcohol** vol.%
 
 use the pairs function
 see readme for more to do
