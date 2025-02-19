@@ -12,10 +12,9 @@ library(randomForest)
 library(corrplot)
 ```
 
-```{r}
+```{r dataset_analysis}
 # Charger le jeu de données
 winequality_white <- read_delim("dataset/winequality-white.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
-
 
 # Normaliser les noms des colonnes
 colnames(winequality_white) <- make.names(colnames(winequality_white))
@@ -33,7 +32,23 @@ correlation_matrix <- cor(winequality_white)
 
 # Visualiser la matrice de corrélation
 corrplot(correlation_matrix, method = "circle")
+```
 
+### Interpreting the results:
+
+This correlation plot shows clearly the correlations between variables.
+
+- A positive correlation (shades of blue) means that if one the variables' value increases, the other increases.
+- A negative correlation (shades of red) means that if one of the variables' value increases, the other decreases.
+
+Obviously, wine density is inversely correlated to alcohol content. This can be easily understood when comparing the density of ethanol to that of water:
+
+- Ethanol density : 0.7892 g/mL at 20°C.
+- Water density : 0.9982 g/mL at 20°C.
+
+And indeed, if alcohol content is higher, the density lowers, which explains the strong negative correlation.
+
+```{r }
 # Test de normalité (Shapiro-Wilk)
 shapiro.test(winequality_white$quality)
 
