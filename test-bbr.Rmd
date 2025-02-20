@@ -84,11 +84,14 @@ model <- randomForest(quality ~ ., data = wineTrain)
 # Prédire sur l'ensemble de test
 predictions <- predict(model, wineTest)
 
+# Arrondir les prédictions pour obtenir des nombres entiers
+rounded_predictions <- round(predictions)
+
 # Afficher les prédictions
-predictions
+rounded_predictions
 
 # Évaluer le modèle
-eval <- postResample(pred = predictions, obs = wineTest$quality)
+eval <- postResample(pred = rounded_predictions, obs = wineTest$quality)
 
 # Afficher les métriques d'évaluation
 eval
@@ -106,6 +109,12 @@ Le coefficient de détermination, ou R-squared, représente la proportion de la 
 Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
 
 ```{r}
+# Calculer la précision
+accuracy <- sum(rounded_predictions == wineTest$quality) / nrow(wineTest)
+
+# Afficher la précision
+print(paste("Précision :", round(accuracy * 100, 2), "%"))
+
 # Importer les variables importantes
 importance(model)
 varImpPlot(model)
@@ -120,7 +129,10 @@ Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour
 
 
 
-
+accuracy: précision
+loglosss: proba d'être dans la classe correcte
+AUC
+brigher score
 
 
 
