@@ -10,6 +10,7 @@ library(dplyr)
 library(caret)
 library(randomForest)
 library(corrplot)
+library(rpart)
 ```
 
 ```{r dataset_analysis}
@@ -77,6 +78,28 @@ dim(wineTrain)
 dim(wineTest)
 ```
 
+## Decision Tree Model
+```{r}
+# Entraîner le modèle avec un seul arbre de décision
+tree_model <- rpart(quality ~ ., data = wineTrain, method = "class")
+
+# Afficher l'arbre de décision
+print(tree_model)
+
+# Faire des prédictions sur l'ensemble de test
+tree_predictions <- predict(tree_model, wineTest, type = "class")
+
+# Afficher les prédictions
+head(tree_predictions)
+
+# Calculer la précision
+accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
+
+# Afficher la précision
+print(paste("Précision :", round(accuracy * 100, 2), "%"))
+```
+
+## Random Forest Model
 ```{r}
 # Entraîner le modèle de forêts aléatoires
 model <- randomForest(quality ~ ., data = wineTrain)
@@ -88,7 +111,7 @@ predictions <- predict(model, wineTest)
 rounded_predictions <- round(predictions)
 
 # Afficher les prédictions
-rounded_predictions
+head(rounded_predictions)
 
 # Évaluer le modèle
 eval <- postResample(pred = rounded_predictions, obs = wineTest$quality)
@@ -126,13 +149,6 @@ Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour
 - **Importance des variables** : Nous avons examiné l'importance des différentes variables dans le modèle. Les variables avec des scores d'importance élevés contribuent davantage aux prédictions.
 
 - **Visualisation** : Le graphique d'importance des variables nous permet de voir rapidement quelles caractéristiques sont les plus influentes dans la prédiction de la qualité du vin.
-
-
-
-accuracy: précision
-loglosss: proba d'être dans la classe correcte
-AUC
-brigher score
 
 
 
