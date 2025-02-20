@@ -2,25 +2,153 @@
 title: "Wine dataset analysis"
 author: "BROINE Thomas, BRONSIN Baptiste, TCHILINGUIRIAN Théo"
 date: "2025-02-17"
-output:
-  html_document:
-    df_print: paged
+output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+<style type="text/css">
 
-# Install required libraries
-library(tidyverse)
+body, td {
+   font-size: 16px;
+}
+code.r{
+  font-size: 14px;
+}
+pre {
+  font-size: 14px
+}
+</style>
+
+```{r setup, include=FALSE}
+library(readr)
+library(knitr)
+library(dplyr)
+library(caret)
 library(randomForest)
+library(corrplot)
 ```
 
-```{r importing_dataset, include=FALSE}
-# Importing the dataset
-read.csv("dataset/winequality-white.csv")
+## Quick summary of the data
 
-# First few columns and summary
+```{r dataset_analysis}
+# Charger le jeu de données
+winequality_white <- read_delim("dataset/winequality-white.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
 
+# Normaliser les noms des colonnes
+colnames(winequality_white) <- make.names(colnames(winequality_white))
+
+print(colnames(winequality_white))
+
+# Afficher les dernières lignes du jeu de données
+kable(tail(winequality_white))
+
+# Statistiques descriptives
+summary(winequality_white)
+```
+
+## Histograms on important variables
+
+```{r histograms, fig.width=7, fig.height=7}
+# Exemple d'histogrammes pour quelques variables
+par(mfrow=c(2,2))  # pour afficher plusieurs graphes sur une grille 2x2
+
+hist(winequality_white$fixed.acidity, 
+     main="Histogram: fixed acidity", col="skyblue", xlab="Fixed Acidity")
+hist(winequality_white$volatile.acidity, 
+     main="Histogram: volatile acidity", col="skyblue", xlab="Volatile Acidity")
+hist(winequality_white$alcohol, 
+     main="Histogram: alcohol", col="skyblue", xlab="Alcohol")
+hist(winequality_white$quality, 
+     main="Histogram: quality", col="skyblue", xlab="Quality")
+```
+
+These are histograms for displaying the quantities of some important variables, per their values.
+
+```{r boxplot_alcohol}
+# Relations entre qualité et alcool.
+boxplot(alcohol ~ quality, data=winequality_white,
+        main="Alcohol content according to wine quality",
+        xlab="Quality", ylab="Alcohol content")
+```
+
+This boxplot shows that higher wine qualities have higher alcohol content. The best quality of wine has a consistant high value in alcohol content
+
+```{r boxplot_density}
+# Relations entre qualité et densité.
+boxplot(density ~ quality, data=winequality_white,
+        main="Density according to wine quality",
+        xlab="Quality", ylab="Density")
+```
+
+This boxplot shows that higher wine qualities have lower density (that is, different contents such as sugars, alcohol, and other chemicals). The best quality of wine has a consistant low density.
+
+```{r correlation}
+# Calculer la matrice de corrélation
+correlation_matrix <- cor(winequality_white)
+
+# Visualiser la matrice de corrélation
+corrplot(correlation_matrix, method = "circle")
+```
+
+### Interpreting the results:
+
+This correlation plot shows clearly the correlations between variables.
+
+- A positive correlation (shades of blue) means that if one the variables' value increases, the other increases.
+- A negative correlation (shades of red) means that if one of the variables' value increases, the other decreases.
+
+Obviously, wine density is inversely correlated to alcohol content. This can be easily understood when comparing the density of ethanol to that of water:
+
+- Ethanol density : 0.7892 g/mL at 20°C.
+- Water density : 0.9982 g/mL at 20°C.
+
+And indeed, if alcohol content is higher, the density lowers, which explains the strong negative correlation.
+
+Other obvious correlations include acidity and pH, density and residual sugar content
+
+Basically, the density is explained by the wine's contents (alcohol, sugars, sulphates, chlorides). Thankfully for this small dataset, the correlation between these variables will not influence the wine quality prediction. For this small dataset, we don't need to eliminate variables for predictions.
+
+## Logistic binary regression
+
+Now, we will do a binary logistic regression for predictive analysis.  
+Nous voulons prédire quality_binary (mauvais vs bon) à partir des variables chimiques.
+
+First, we classify the quality as binary.
+
+```{r}
+winequality_white <- winequality_white %>%
+  mutate(quality_binary = ifelse(quality <= 5, "bad", "good"))
+
+# On veut un facteur (category)
+winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
+```
+
+```{r logistic_binary_regression}
+# Régression logistique binaire
+logit_model <- glm(quality_binary ~ fixed.acidity + volatile.acidity + 
+                                     citric.acid + residual.sugar + chlorides + 
+                                     free.sulfur.dioxide + total.sulfur.dioxide + 
+                                     density + pH + sulphates + alcohol,
+                   data = winequality_white,
+                   family = binomial)
+
+# Résumé du modèle
+summary(logit_model)
+
+# Prédiction sur l'ensemble de test (probabilité d'être "bon")
+predict_prob_logit <- predict(logit_model, newdata = winequality_white, type = "response")
+
+# Pour obtenir la classe prédite (0/1) selon un cutoff=0.5
+predict_class_logit <- ifelse(predict_prob_logit > 0.5, "bon", "mauvais")
+predict_class_logit <- factor(predict_class_logit, levels = c("mauvais", "bon"))
+
+# Table de confusion
+conf_mat_logit <- table(Predicted = predict_class_logit, 
+                        Actual = winequality_white$quality_binary)
+conf_mat_logit
+
+# Accuracy
+accuracy_logit <- sum(diag(conf_mat_logit)) / sum(conf_mat_logit)
+accuracy_logit
 ```
 
 ## Dataset analysis
