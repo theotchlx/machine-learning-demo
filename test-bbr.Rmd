@@ -49,6 +49,9 @@ Obviously, wine density is inversely correlated to alcohol content. This can be 
 And indeed, if alcohol content is higher, the density lowers, which explains the strong negative correlation.
 
 ```{r }
+# Calculer la matrice de corrélation
+correlation_pairs_matrix <- pairs(winequality_white)
+
 # Test de normalité (Shapiro-Wilk)
 shapiro.test(winequality_white$quality)
 
@@ -68,6 +71,8 @@ trainIndex <- createDataPartition(winequality_white$quality, p = .8,
 wineTrain <- winequality_white[ trainIndex,]
 wineTest  <- winequality_white[-trainIndex,]
 
+wineTrain <- wineTrain[, !(names(wineTrain) %in% c("quality_binary"))]
+
 dim(wineTrain)
 dim(wineTest)
 ```
@@ -79,11 +84,17 @@ model <- randomForest(quality ~ ., data = wineTrain)
 # Prédire sur l'ensemble de test
 predictions <- predict(model, wineTest)
 
+# Afficher les prédictions
+predictions
+
 # Évaluer le modèle
 eval <- postResample(pred = predictions, obs = wineTest$quality)
+
+# Afficher les métriques d'évaluation
+eval
 ```
 
-## Description
+## Interprétation
 
 ### RMSE
 Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
@@ -98,7 +109,14 @@ Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs ré
 # Importer les variables importantes
 importance(model)
 varImpPlot(model)
+mtext("Importance des variables dans le modèle", side = 1, line = 2, cex = 1.2)
 ```
+
+Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour prédire la qualité du vin.
+
+- **Importance des variables** : Nous avons examiné l'importance des différentes variables dans le modèle. Les variables avec des scores d'importance élevés contribuent davantage aux prédictions.
+
+- **Visualisation** : Le graphique d'importance des variables nous permet de voir rapidement quelles caractéristiques sont les plus influentes dans la prédiction de la qualité du vin.
 
 
 
