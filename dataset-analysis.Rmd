@@ -45,7 +45,7 @@ We observe that every variable is quantitative.
 
 ## Quick summary of the data
 
-```{r dataset_analysis}
+```{r dataset_analysis, echo=FALSE}
 # Charger le jeu de données
 winequality_white <- read_delim("dataset/winequality-white.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
 
