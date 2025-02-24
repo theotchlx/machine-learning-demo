@@ -97,6 +97,17 @@ accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 
 # Afficher la précision
 print(paste("Précision :", round(accuracy * 100, 2), "%"))
+
+# Faire des prédictions de probabilités sur l'ensemble de test
+prob_predictions <- predict(tree_model, wineTest, type = "prob")
+
+# Convertir les étiquettes réelles en un vecteur factorisé
+true_labels <- as.factor(wineTest$quality)
+# Calculer le log loss
+logloss_value <- -mean(log(prob_predictions[cbind(1:nrow(prob_predictions), true_labels)]))
+
+# Afficher le log loss
+print(paste("Log Loss :", round(logloss_value, 4)))
 ```
 
 ## Random Forest Model

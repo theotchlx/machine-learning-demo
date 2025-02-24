@@ -610,6 +610,17 @@ accuracy &lt;- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 # Afficher la précision
 print(paste(&quot;Précision :&quot;, round(accuracy * 100, 2), &quot;%&quot;))</code></pre>
 <pre><code>## [1] &quot;Précision : 51.89 %&quot;</code></pre>
+<pre class="r"><code># Faire des prédictions de probabilités sur l&#39;ensemble de test
+prob_predictions &lt;- predict(tree_model, wineTest, type = &quot;prob&quot;)
+
+# Convertir les étiquettes réelles en un vecteur factorisé
+true_labels &lt;- as.factor(wineTest$quality)
+# Calculer le log loss
+logloss_value &lt;- -mean(log(prob_predictions[cbind(1:nrow(prob_predictions), true_labels)]))
+
+# Afficher le log loss
+print(paste(&quot;Log Loss :&quot;, round(logloss_value, 4)))</code></pre>
+<pre><code>## [1] &quot;Log Loss : Inf&quot;</code></pre>
 </div>
 <div id="random-forest-model" class="section level2">
 <h2>Random Forest Model</h2>
