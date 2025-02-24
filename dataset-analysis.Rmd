@@ -58,25 +58,6 @@ kable(tail(winequality_white))
 summary(winequality_white)
 ```
 
-### Dataset variables
-
-The dataset contains 12 variables:
-
-- **fixed acidity** g(tartaric acid)/dm^3
-- **volatile acidity** g(acetic acid)/dm^3
-- **Citric acid** g/dm^3
-- **Residual sugar** g/dm^3
-- **Chlorides** g(sodium chloride)/dm^3
-- **Free sulfur dioxide** mg/dm^3
-- **Total sulfur dioxide** mg/dm^3
-- **Density** g/cm^3
-- **pH**
-- **Sulphates** g(potassium sulphate)/dm^3
-- **Alcohol** vol.%
-- **Quality** (score between 0 and 10)
-
-The wine quality is ordinal, all other variables are quantitative.
-
 ### Histograms on important variables
 
 Here is an overview of some important variables that will be used for the analysis.
@@ -103,7 +84,7 @@ The following boxplots show the distribution of some important variables, per th
 
 #### Alcohol content
 
-```{r boxplot_alcohol}
+```{r boxplot_alcohol, echo=FALSE}
 # Relations entre qualité et alcool.
 boxplot(alcohol ~ quality, data=winequality_white,
         main="Alcohol content according to wine quality",
@@ -115,16 +96,20 @@ However, it is important to note that there are very few data on higher quality 
 
 #### Density
 
-```{r boxplot_density}
-# Relations entre qualité et densité.
-boxplot(density ~ quality, data=winequality_white,
+```{r boxplot_density, echo=FALSE}
+# Relations entre qualité et densité
+boxplot(density ~ quality, data=winequality_white, ylim=c(0.98, 1.01),
         main="Density according to wine quality",
-        xlab="Quality", ylab="Density")
+        xlab="Quality", col="skyblue", ylab="Density")
 ```
 
 This boxplot shows that higher wine qualities have lower density (that is, different contents such as sugars, alcohol, and other chemicals). The best quality of wine has a consistant low density.
 
-```{r correlation}
+### Correlation
+
+This correlation plot shows the correlation between variables.
+
+```{r correlation, echo=FALSE}
 # Calculer la matrice de corrélation
 correlation_matrix <- cor(winequality_white)
 
@@ -132,7 +117,7 @@ correlation_matrix <- cor(winequality_white)
 corrplot(correlation_matrix, method = "circle")
 ```
 
-### Interpreting the results:
+#### Interpreting the results:
 
 This correlation plot shows clearly the correlations between variables.
 
