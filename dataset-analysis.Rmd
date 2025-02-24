@@ -52,32 +52,56 @@ winequality_white <- read_delim("dataset/winequality-white.csv", delim = ";", es
 # Normaliser les noms des colonnes
 colnames(winequality_white) <- make.names(colnames(winequality_white))
 
-print(colnames(winequality_white))
-
 # Afficher les dernières lignes du jeu de données
 kable(tail(winequality_white))
 
-# Statistiques descriptives
 summary(winequality_white)
 ```
 
-## Histograms on important variables
+### Dataset variables
 
-```{r histograms, fig.width=7, fig.height=7}
+The dataset contains 12 variables:
+
+- **fixed acidity** g(tartaric acid)/dm^3
+- **volatile acidity** g(acetic acid)/dm^3
+- **Citric acid** g/dm^3
+- **Residual sugar** g/dm^3
+- **Chlorides** g(sodium chloride)/dm^3
+- **Free sulfur dioxide** mg/dm^3
+- **Total sulfur dioxide** mg/dm^3
+- **Density** g/cm^3
+- **pH**
+- **Sulphates** g(potassium sulphate)/dm^3
+- **Alcohol** vol.%
+- **Quality** (score between 0 and 10)
+
+The wine quality is ordinal, all other variables are quantitative.
+
+### Histograms on important variables
+
+Here is an overview of some important variables that will be used for the analysis.
+
+```{r histograms, fig.width=7, fig.height=7, echo=FALSE}
 # Exemple d'histogrammes pour quelques variables
 par(mfrow=c(2,2))  # pour afficher plusieurs graphes sur une grille 2x2
 
-hist(winequality_white$fixed.acidity, 
-     main="Histogram: fixed acidity", col="skyblue", xlab="Fixed Acidity")
-hist(winequality_white$volatile.acidity, 
-     main="Histogram: volatile acidity", col="skyblue", xlab="Volatile Acidity")
 hist(winequality_white$alcohol, 
-     main="Histogram: alcohol", col="skyblue", xlab="Alcohol")
+     main="Histogram: alcohol", col="skyblue", xlab="Alcohol ( vol.% )")
+hist(winequality_white$density,
+     main="Histogram: density", col="skyblue", xlab="Density ( g/cm^3 )")
+hist(winequality_white$pH,
+     main="Histogram: pH", col="skyblue", xlab="pH")
 hist(winequality_white$quality, 
      main="Histogram: quality", col="skyblue", xlab="Quality")
 ```
 
-These are histograms for displaying the quantities of some important variables, per their values.
+These histograms display the quantities of some important variables, per their values.
+
+### Boxplots on important variables
+
+The following boxplots show the distribution of some important variables, per the wine quality.
+
+#### Alcohol content
 
 ```{r boxplot_alcohol}
 # Relations entre qualité et alcool.
@@ -86,7 +110,10 @@ boxplot(alcohol ~ quality, data=winequality_white,
         xlab="Quality", ylab="Alcohol content")
 ```
 
-This boxplot shows that higher wine qualities have higher alcohol content. The best quality of wine has a consistant high value in alcohol content
+This boxplot shows that generally, higher wine qualities have higher alcohol content. The best quality of wine has a consistant high value in alcohol content.  
+However, it is important to note that there are very few data on higher quality wine (as can be seen in the above histograms).
+
+#### Density
 
 ```{r boxplot_density}
 # Relations entre qualité et densité.
