@@ -97,17 +97,6 @@ accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 
 # Afficher la précision
 print(paste("Précision :", round(accuracy * 100, 2), "%"))
-
-# Faire des prédictions de probabilités sur l'ensemble de test
-prob_predictions <- predict(tree_model, wineTest, type = "prob")
-
-# Convertir les étiquettes réelles en un vecteur factorisé
-true_labels <- as.factor(wineTest$quality)
-# Calculer le log loss
-logloss_value <- -mean(log(prob_predictions[cbind(1:nrow(prob_predictions), true_labels)]))
-
-# Afficher le log loss
-print(paste("Log Loss :", round(logloss_value, 4)))
 ```
 
 ## Random Forest Model
@@ -131,16 +120,6 @@ eval <- postResample(pred = rounded_predictions, obs = wineTest$quality)
 eval
 ```
 
-## Interprétation
-
-### RMSE
-Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
-
-### Rsquared
-Le coefficient de détermination, ou R-squared, représente la proportion de la variance de la variable dépendante qui est prévisible à partir des variables indépendantes. Un R-squared de 1 signifie que le modèle explique parfaitement la variance des données, tandis qu'un R-squared de 0 signifie que le modèle n'explique aucune variance. Ici, la valeur est de `r round(eval["Rsquared"], 4)`, indiquant que le modèle explique environ `r round(eval["Rsquared"] * 100, 2)`% de la variance dans la qualité du vin.
-
-### MAE
-Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
 
 ```{r}
 # Calculer la précision
@@ -156,6 +135,32 @@ mtext("Importance des variables dans le modèle", side = 1, line = 2, cex = 1.2)
 ```
 
 Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour prédire la qualité du vin.
+
+```{r metrics-logloss}
+# y_true = 0 ou 1
+y_true <- ifelse(wineTest$quality_binary == "Good", 1, 0)
+
+# Petite fonction pour calculer le log loss
+log_loss <- function(y_true, rounded_predictions, eps=1e-15){
+  rounded_predictions <- pmin(pmax(rounded_predictions, eps), 1 - eps)
+  -mean(y_true * log(rounded_predictions) + (1 - y_true)*log(1 - rounded_predictions))
+}
+
+# Log loss pour le random forest
+ll_rf <- log_loss(y_true, rounded_predictions)
+ll_rf
+```
+
+## Interprétation
+
+### RMSE
+Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
+
+### Rsquared
+Le coefficient de détermination, ou R-squared, représente la proportion de la variance de la variable dépendante qui est prévisible à partir des variables indépendantes. Un R-squared de 1 signifie que le modèle explique parfaitement la variance des données, tandis qu'un R-squared de 0 signifie que le modèle n'explique aucune variance. Ici, la valeur est de `r round(eval["Rsquared"], 4)`, indiquant que le modèle explique environ `r round(eval["Rsquared"] * 100, 2)`% de la variance dans la qualité du vin.
+
+### MAE
+Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
 
 - **Importance des variables** : Nous avons examiné l'importance des différentes variables dans le modèle. Les variables avec des scores d'importance élevés contribuent davantage aux prédictions.
 
