@@ -270,6 +270,21 @@ eval <- postResample(pred = rounded_predictions, obs = wineTest$quality)
 eval
 ```
 
+### RMSE
+
+The RMSE measures the mean difference between the values predicted by the model and the actual values. A lower RMSE value indicates a better fit of the model to the data. Here, the value is `r round(eval[“RMSE”], 4)`, which means that, on average, model predictions deviate from actual values by `r round(eval[“RMSE”], 4)` units.
+
+### Rsquared
+
+The coefficient of determination, or R-squared, represents the proportion of the variance of the dependent variable that can be predicted from the independent variables. An R-squared of 1 means that the model perfectly explains the variance of the data, while an R-squared of 0 means that the model explains no variance. Here, the value is `r round(eval[“Rsquared”], 4)`, indicating that the model explains around `r round(eval[“Rsquared”] * 100, 2)`% of the variance in wine quality.
+
+### MAE
+
+MAE measures the mean absolute error between predictions and actual values. Unlike the RMSE, it does not penalize large errors as much. Here, the value is `r round(eval[“MAE”], 4)`, which means that, on average, model predictions deviate from actual values by `r round(eval[“MAE”], 4)` units.
+
+- Variable importance**: We examined the importance of the different variables in the model. Variables with high importance scores contribute more to the predictions.
+- **Visualization**: The variable importance graph allows us to quickly see which characteristics are most influential in predicting wine quality.
+
 ```{r}
 # Calculer la précision
 forest_accuracy <- sum(rounded_predictions == wineTest$quality) / nrow(wineTest)
@@ -283,7 +298,7 @@ varImpPlot(randomForestModel)
 mtext("Importance of variables in the model", side = 1, line = 2, cex = 1.2)
 ```
 
-Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour prédire la qualité du vin.
+In this section, we have trained a random forest model to predict wine quality.
 
 ```{r metrics-logloss}
 # Convertir les scores de qualité en probabilités
@@ -294,13 +309,14 @@ ll_rf_forest <- log_loss(y_true, probabilities)
 print(paste("Log loss :", ll_rf_forest))
 ```
 
-Le log loss binaire est une mesure de performance utilisée pour évaluer la précision des prédictions probabilistes d'un modèle de classification binaire, en comparant les probabilités prédites à la véritable classe (0 ou 1) de chaque échantillon.
+Binary log loss is a performance measure used to assess the accuracy of the probabilistic predictions of a binary classification model, by comparing the predicted probabilities with the true class (0 or 1) of each sample.
 
 And we calculate the Brier score as well.
 ```{r brier_forest}
 # Calculer Brier score pour le modèle random forest
 #...
 ```
+
 
 ## Interpretation and Comparison
 
