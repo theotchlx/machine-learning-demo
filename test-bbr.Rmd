@@ -120,6 +120,14 @@ ll_rf <- log_loss(y_true, probabilities)
 print(ll_rf)
 ```
 
+We also calculate the Brier score of the model.
+```{r brier_tree}
+# Calculer Brier score pour le modèle decision tree
+tree_probabilities <- predict(tree_model, wineTest, type = "prob")
+brier_score_tree <- mean((tree_probabilities[, 2] - y_true)^2)
+print(paste("Brier Score (Decision Tree):", round(brier_score_tree, 4)))
+```
+
 ## Random Forest Model
 ```{r}
 # Entraîner le modèle de forêts aléatoires
@@ -176,6 +184,14 @@ print(ll_rf)
 ```
 
 Le log loss binaire est une mesure de performance utilisée pour évaluer la précision des prédictions probabilistes d'un modèle de classification binaire, en comparant les probabilités prédites à la véritable classe (0 ou 1) de chaque échantillon.
+
+And we calculate the Brier score as well.
+```{r brier_forest}
+# Calculer le Brier score pour le modèle de forêts aléatoires
+rf_probabilities <- predict(model, wineTest, type = "prob")
+brier_score_rf <- mean((rf_probabilities[, 2] - y_true)^2)
+print(paste("Brier Score (Random Forest):", round(brier_score_rf, 4)))
+```
 
 ## Interprétation
 
