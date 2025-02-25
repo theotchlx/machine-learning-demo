@@ -25,6 +25,7 @@ library(dplyr)
 library(caret)
 library(randomForest)
 library(corrplot)
+library(rpart)
 ```
 
 ## Dataset analysis
@@ -157,7 +158,12 @@ trainIndex <- createDataPartition(winequality_white$quality, p = .8,
 wineTrain <- winequality_white[ trainIndex,]
 wineTest  <- winequality_white[-trainIndex,]
 
-wineTrain <- wineTrain[, !(names(wineTrain) %in% c("quality_binary"))]
+wineTrain_withoutQuality <- wineTrain[, !(names(wineTrain) %in% c("quality"))]
+wineTrain_withoutQualityBinary <- wineTrain[, !(names(wineTrain) %in% c("quality_binary"))]
+
+wineTest_withoutQuality <- wineTest[, !(names(wineTest) %in% c("quality"))]
+wineTest_withoutQualityBinary <- wineTest[, !(names(wineTest) %in% c("quality_binary"))]
+wineTest_WithoutAllQuality <- wineTest[, !(names(wineTest) %in% c("quality", "quality_binary"))]
 
 dim(wineTrain)
 dim(wineTest)
@@ -169,14 +175,14 @@ logit_model <- glm(quality_binary ~ fixed.acidity + volatile.acidity +
                                      citric.acid + residual.sugar + chlorides + 
                                      free.sulfur.dioxide + total.sulfur.dioxide + 
                                      density + pH + sulphates + alcohol,
-                   data = winequality_white,
+                   data = wineTrain_withoutQuality, # We need here to predict the binary quality
                    family = binomial)
 
 # Résumé du modèle
 summary(logit_model)
 
 # Prédiction sur l'ensemble de test (probabilité d'être "bon")
-predict_prob_logit <- predict(logit_model, newdata = winequality_white, type = "response")
+predict_prob_logit <- predict(logit_model, newdata = wineTest_WithoutAllQuality, type = "response") # We remove all quality clues
 
 # Pour obtenir la classe prédite (0/1) selon un cutoff=0.5
 predict_class_logit <- ifelse(predict_prob_logit <= 0.5, "bad", "good")
@@ -184,13 +190,134 @@ predict_class_logit <- factor(predict_class_logit, levels = c("bad", "good"))
 
 # Table de confusion
 conf_mat_logit <- table(Predicted = predict_class_logit, 
-                        Actual = winequality_white$quality_binary)
+                        Actual = wineTest$quality_binary)
 conf_mat_logit
 
 # Accuracy
 accuracy_logit <- sum(diag(conf_mat_logit)) / sum(conf_mat_logit)
 accuracy_logit
 ```
+
+## Decision Tree Model
+```{r}
+# Entraîner le modèle avec un seul arbre de décision
+tree_model <- rpart(quality ~ ., data = wineTrain_withoutQualityBinary, method = "class") # We need here to predict the quality
+
+# Afficher l'arbre de décision
+print(tree_model)
+
+# Faire des prédictions sur l'ensemble de test
+tree_predictions <- predict(tree_model, wineTest_WithoutAllQuality, type = "class") # We remove all quality clues
+
+# Afficher les prédictions
+head(tree_predictions)
+
+# Calculer la précision
+accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
+
+# Afficher la précision
+print(paste("Précision :", round(accuracy * 100, 2), "%"))
+```
+
+There are two types of log loss calculations: one for binary classification problems and one for multi-class classification problems. In this case, we have a binary classification problem, so we will use the log loss formula for binary classification.
+
+```{r decision-tree-logloss}
+y_true <- ifelse(wineTest$quality_binary == "good", 1, 0)
+
+# Convertir les facteurs en numériques
+tree_predictions_numeric <- as.numeric(as.character(tree_predictions))
+
+# Convertir les scores de qualité en probabilités
+probabilities <- tree_predictions_numeric / 10
+
+# Fonction pour calculer le log loss
+log_loss <- function(y_true, probabilities, eps=1e-15){
+  probabilities <- pmin(pmax(probabilities, eps), 1 - eps)
+  -mean(y_true * log(probabilities) + (1 - y_true) * log(1 - probabilities))
+}
+
+# Calcul de la log loss
+ll_rf <- log_loss(y_true, probabilities)
+print(paste("Log loss :", ll_rf))
+```
+
+We also calculate the Brier score of the model.
+```{r brier_tree}
+# Calculer Brier score pour le modèle decision tree
+tree_probabilities <- predict(tree_model, wineTest_WithoutAllQuality, type = "prob")
+brier_score_tree <- mean((tree_probabilities[, 2] - y_true)^2)
+print(paste("Brier Score (Decision Tree):", round(brier_score_tree, 4)))
+```
+
+## Random Forest Model
+```{r}
+# Entraîner le modèle de forêts aléatoires
+randomForestModel <- randomForest(quality ~ ., data = wineTrain_withoutQualityBinary)
+
+# Prédire sur l'ensemble de test
+predictions <- predict(randomForestModel, wineTest_WithoutAllQuality)
+
+# Arrondir les prédictions pour obtenir des nombres entiers
+rounded_predictions <- round(predictions)
+
+# Afficher les prédictions
+head(rounded_predictions)
+
+# Évaluer le modèle
+eval <- postResample(pred = rounded_predictions, obs = wineTest$quality)
+
+# Afficher les métriques d'évaluation
+eval
+```
+
+```{r}
+# Calculer la précision
+accuracy <- sum(rounded_predictions == wineTest$quality) / nrow(wineTest)
+
+# Afficher la précision
+print(paste("Précision :", round(accuracy * 100, 2), "%"))
+
+# Importer les variables importantes
+importance(randomForestModel)
+varImpPlot(randomForestModel)
+mtext("Importance des variables dans le modèle", side = 1, line = 2, cex = 1.2)
+```
+
+Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour prédire la qualité du vin.
+
+```{r metrics-logloss}
+# Convertir les scores de qualité en probabilités
+probabilities <- rounded_predictions / 10
+
+# Calcul de la log loss
+ll_rf <- log_loss(y_true, probabilities)
+print(paste("Log loss :", ll_rf))
+```
+
+Le log loss binaire est une mesure de performance utilisée pour évaluer la précision des prédictions probabilistes d'un modèle de classification binaire, en comparant les probabilités prédites à la véritable classe (0 ou 1) de chaque échantillon.
+
+And we calculate the Brier score as well.
+```{r brier_forest}
+# Calculer le Brier score pour le modèle de forêts aléatoires
+# rf_probabilities <- predict(randomForestModel, wineTest_WithoutAllQuality, type = "prob") # ERROR on type = prob
+# brier_score_rf <- mean((rf_probabilities[, 2] - y_true)^2)
+# print(paste("Brier Score (Random Forest):", round(brier_score_rf, 4)))
+```
+
+## Interprétation
+
+### RMSE
+Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
+
+### Rsquared
+Le coefficient de détermination, ou R-squared, représente la proportion de la variance de la variable dépendante qui est prévisible à partir des variables indépendantes. Un R-squared de 1 signifie que le modèle explique parfaitement la variance des données, tandis qu'un R-squared de 0 signifie que le modèle n'explique aucune variance. Ici, la valeur est de `r round(eval["Rsquared"], 4)`, indiquant que le modèle explique environ `r round(eval["Rsquared"] * 100, 2)`% de la variance dans la qualité du vin.
+
+### MAE
+Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
+
+- **Importance des variables** : Nous avons examiné l'importance des différentes variables dans le modèle. Les variables avec des scores d'importance élevés contribuent davantage aux prédictions.
+
+- **Visualisation** : Le graphique d'importance des variables nous permet de voir rapidement quelles caractéristiques sont les plus influentes dans la prédiction de la qualité du vin.
 
 use the pairs function
 see readme for more to do
