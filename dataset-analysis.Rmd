@@ -213,10 +213,10 @@ tree_predictions <- predict(tree_model, wineTest_WithoutAllQuality, type = "clas
 head(tree_predictions)
 
 # Calculer la précision
-accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
+tree_accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 
 # Afficher la précision
-print(paste("Précision :", round(accuracy * 100, 2), "%"))
+print(paste("Précision :", round(tree_accuracy * 100, 2), "%"))
 ```
 
 There are two types of log loss calculations: one for binary classification problems and one for multi-class classification problems. In this case, we have a binary classification problem, so we will use the log loss formula for binary classification.
@@ -244,7 +244,7 @@ print(paste("Log loss :", ll_rf))
 We also calculate the Brier score of the model.
 ```{r brier_tree}
 # Calculer Brier score pour le modèle decision tree
-tree_probabilities <- predict(tree_model, wineTest_WithoutAllQuality, type = "prob")
+tree_probabilities <- predict(tree_model, wineTest_WithoutAllQuality)
 brier_score_tree <- mean((tree_probabilities[, 2] - y_true)^2)
 print(paste("Brier Score (Decision Tree):", round(brier_score_tree, 4)))
 ```
@@ -272,15 +272,15 @@ eval
 
 ```{r}
 # Calculer la précision
-accuracy <- sum(rounded_predictions == wineTest$quality) / nrow(wineTest)
+forest_accuracy <- sum(rounded_predictions == wineTest$quality) / nrow(wineTest)
 
 # Afficher la précision
-print(paste("Précision :", round(accuracy * 100, 2), "%"))
+print(paste("Précision :", round(forest_accuracy * 100, 2), "%"))
 
 # Importer les variables importantes
 importance(randomForestModel)
 varImpPlot(randomForestModel)
-mtext("Importance des variables dans le modèle", side = 1, line = 2, cex = 1.2)
+mtext("Importance of variables in the model", side = 1, line = 2, cex = 1.2)
 ```
 
 Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour prédire la qualité du vin.
@@ -290,36 +290,61 @@ Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour
 probabilities <- rounded_predictions / 10
 
 # Calcul de la log loss
-ll_rf <- log_loss(y_true, probabilities)
-print(paste("Log loss :", ll_rf))
+ll_rf_forest <- log_loss(y_true, probabilities)
+print(paste("Log loss :", ll_rf_forest))
 ```
 
 Le log loss binaire est une mesure de performance utilisée pour évaluer la précision des prédictions probabilistes d'un modèle de classification binaire, en comparant les probabilités prédites à la véritable classe (0 ou 1) de chaque échantillon.
 
 And we calculate the Brier score as well.
 ```{r brier_forest}
-# Calculer le Brier score pour le modèle de forêts aléatoires
-# rf_probabilities <- predict(randomForestModel, wineTest_WithoutAllQuality, type = "prob") # ERROR on type = prob
-# brier_score_rf <- mean((rf_probabilities[, 2] - y_true)^2)
-# print(paste("Brier Score (Random Forest):", round(brier_score_rf, 4)))
+# Calculer Brier score pour le modèle random forest
+#...
 ```
 
-## Interprétation
+## Interpretation and Comparison
 
-### RMSE
-Le RMSE mesure l'écart moyen entre les valeurs prédites par le modèle et les valeurs réelles. Une valeur de RMSE plus faible indique un meilleur ajustement du modèle aux données. Ici, la valeur est de `r round(eval["RMSE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["RMSE"], 4)` unités des valeurs réelles.
+First, we examined the dataset, its variables and their relative importance for our predictions.  
+We have done predictions using two models: a single decision tree, and a random forest model.  
+To conclude this report, we will now compare their accuracy metrics to determine which model was the better prediction model.
 
-### Rsquared
-Le coefficient de détermination, ou R-squared, représente la proportion de la variance de la variable dépendante qui est prévisible à partir des variables indépendantes. Un R-squared de 1 signifie que le modèle explique parfaitement la variance des données, tandis qu'un R-squared de 0 signifie que le modèle n'explique aucune variance. Ici, la valeur est de `r round(eval["Rsquared"], 4)`, indiquant que le modèle explique environ `r round(eval["Rsquared"] * 100, 2)`% de la variance dans la qualité du vin.
+These metrics help us evaluate the performance of our models, by comparing the accuracy, log loss, and Brier score between the two models.
 
-### MAE
-Le MAE mesure l'erreur moyenne absolue entre les prédictions et les valeurs réelles. Contrairement au RMSE, il ne pénalise pas autant les grandes erreurs. Ici, la valeur est de `r round(eval["MAE"], 4)`, ce qui signifie qu'en moyenne, les prédictions du modèle s'écartent de `r round(eval["MAE"], 4)` unités des valeurs réelles.
+### Accuracy Comparison
 
-- **Importance des variables** : Nous avons examiné l'importance des différentes variables dans le modèle. Les variables avec des scores d'importance élevés contribuent davantage aux prédictions.
+The accuracy metric represents the proportion of correctly classified wine quality labels in our test set. We learnt that decision trees are a simple model that is able to capture basic patterns in the data, but are more prone to overfitting when compared to the random forest model, which aggregates multiple trees, and as such improves accuracy by reducing variance.
 
-- **Visualisation** : Le graphique d'importance des variables nous permet de voir rapidement quelles caractéristiques sont les plus influentes dans la prédiction de la qualité du vin.
+From our results:
 
-use the pairs function
-see readme for more to do
-do what u think is good. Explain why. Explain your understanding.
+- Decision tree model accuracy: `r tree_accuracy`  
+- Random forest model accuracy: `r forest_accuracy`
 
+As we can see, the random forest outperforms the single decision tree in accuracy. In the forest, multiple trees contribute to the final prediction, and in this prediction, this led to a better result in accuracy.
+
+### Log Loss Comparison
+
+The log loss is another performance metric. It measures the uncertainty of a probabilistic classification model.
+
+From our results:
+
+- Decision tree model log loss: `r ll_rf`  
+- Random forest model log loss: `r ll_rf_forest`
+
+A lower log loss value indicates that the predicted probabilities are closer to the true values, which is better (the model is better calibrated).
+
+### Brier Score Comparison
+
+The Brier score measures the mean squared error between predicted probabilities and actual outcomes. A lower Brier score indicates better probabilistic predictions.
+
+From our results:
+
+- Decision tree model Brier score: `r brier_score_tree`  
+- Random forest model Brier score: Not done.
+
+### Final results
+
+Comparing the performance metrics we were able to calculate shows that the random forest model seemingly outperforms the single decision tree, across multiple evaluation metrics.
+
+We can conclude that the decision tree is a simple model which we can understand more easily, but by combining multiple trees, the random forest model mitigates overfitting and provides more accurate predictions.
+
+We tried to predict wine quality using the given dataset, comparing two prediction models on multiple accuracy metrics, and we demonstrated that the random forest model comes out on top in performance.
