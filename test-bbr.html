@@ -610,6 +610,28 @@ accuracy &lt;- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 # Afficher la précision
 print(paste(&quot;Précision :&quot;, round(accuracy * 100, 2), &quot;%&quot;))</code></pre>
 <pre><code>## [1] &quot;Précision : 51.89 %&quot;</code></pre>
+<p>There are two types of log loss calculations: one for binary
+classification problems and one for multi-class classification problems.
+In this case, we have a binary classification problem, so we will use
+the log loss formula for binary classification.</p>
+<pre class="r"><code>y_true &lt;- ifelse(wineTest$quality_binary == &quot;Good&quot;, 1, 0)
+
+# Convertir les facteurs en numériques
+tree_predictions_numeric &lt;- as.numeric(as.character(tree_predictions))
+
+# Convertir les scores de qualité en probabilités
+probabilities &lt;- tree_predictions_numeric / 10
+
+# Fonction pour calculer le log loss
+log_loss &lt;- function(y_true, probabilities, eps=1e-15){
+  probabilities &lt;- pmin(pmax(probabilities, eps), 1 - eps)
+  -mean(y_true * log(probabilities) + (1 - y_true) * log(1 - probabilities))
+}
+
+# Calcul de la log loss
+ll_rf &lt;- log_loss(y_true, probabilities)
+print(ll_rf)</code></pre>
+<pre><code>## [1] 0.6150915</code></pre>
 </div>
 <div id="random-forest-model" class="section level2">
 <h2>Random Forest Model</h2>
@@ -661,16 +683,23 @@ aléatoires pour prédire la qualité du vin.</p>
 <pre class="r"><code># y_true = 0 ou 1
 y_true &lt;- ifelse(wineTest$quality_binary == &quot;Good&quot;, 1, 0)
 
-# Petite fonction pour calculer le log loss
-log_loss &lt;- function(y_true, rounded_predictions, eps=1e-15){
-  rounded_predictions &lt;- pmin(pmax(rounded_predictions, eps), 1 - eps)
-  -mean(y_true * log(rounded_predictions) + (1 - y_true)*log(1 - rounded_predictions))
+# Convertir les scores de qualité en probabilités
+probabilities &lt;- rounded_predictions / 10
+
+# Fonction pour calculer le log loss
+log_loss &lt;- function(y_true, probabilities, eps=1e-15){
+  probabilities &lt;- pmin(pmax(probabilities, eps), 1 - eps)
+  -mean(y_true * log(probabilities) + (1 - y_true) * log(1 - probabilities))
 }
 
-# Log loss pour le random forest
-ll_rf &lt;- log_loss(y_true, rounded_predictions)
-ll_rf</code></pre>
-<pre><code>## [1] 11.57199</code></pre>
+# Calcul de la log loss
+ll_rf &lt;- log_loss(y_true, probabilities)
+print(ll_rf)</code></pre>
+<pre><code>## [1] 0.5808852</code></pre>
+<p>Le log loss binaire est une mesure de performance utilisée pour
+évaluer la précision des prédictions probabilistes d’un modèle de
+classification binaire, en comparant les probabilités prédites à la
+véritable classe (0 ou 1) de chaque échantillon.</p>
 </div>
 <div id="interprétation" class="section level2">
 <h2>Interprétation</h2>

@@ -99,6 +99,27 @@ accuracy <- sum(tree_predictions == wineTest$quality) / nrow(wineTest)
 print(paste("Précision :", round(accuracy * 100, 2), "%"))
 ```
 
+There are two types of log loss calculations: one for binary classification problems and one for multi-class classification problems. In this case, we have a binary classification problem, so we will use the log loss formula for binary classification.
+```{r decision-tree-logloss}
+y_true <- ifelse(wineTest$quality_binary == "Good", 1, 0)
+
+# Convertir les facteurs en numériques
+tree_predictions_numeric <- as.numeric(as.character(tree_predictions))
+
+# Convertir les scores de qualité en probabilités
+probabilities <- tree_predictions_numeric / 10
+
+# Fonction pour calculer le log loss
+log_loss <- function(y_true, probabilities, eps=1e-15){
+  probabilities <- pmin(pmax(probabilities, eps), 1 - eps)
+  -mean(y_true * log(probabilities) + (1 - y_true) * log(1 - probabilities))
+}
+
+# Calcul de la log loss
+ll_rf <- log_loss(y_true, probabilities)
+print(ll_rf)
+```
+
 ## Random Forest Model
 ```{r}
 # Entraîner le modèle de forêts aléatoires
@@ -140,16 +161,21 @@ Dans cette section, nous avons entraîné un modèle de forêts aléatoires pour
 # y_true = 0 ou 1
 y_true <- ifelse(wineTest$quality_binary == "Good", 1, 0)
 
-# Petite fonction pour calculer le log loss
-log_loss <- function(y_true, rounded_predictions, eps=1e-15){
-  rounded_predictions <- pmin(pmax(rounded_predictions, eps), 1 - eps)
-  -mean(y_true * log(rounded_predictions) + (1 - y_true)*log(1 - rounded_predictions))
+# Convertir les scores de qualité en probabilités
+probabilities <- rounded_predictions / 10
+
+# Fonction pour calculer le log loss
+log_loss <- function(y_true, probabilities, eps=1e-15){
+  probabilities <- pmin(pmax(probabilities, eps), 1 - eps)
+  -mean(y_true * log(probabilities) + (1 - y_true) * log(1 - probabilities))
 }
 
-# Log loss pour le random forest
-ll_rf <- log_loss(y_true, rounded_predictions)
-ll_rf
+# Calcul de la log loss
+ll_rf <- log_loss(y_true, probabilities)
+print(ll_rf)
 ```
+
+Le log loss binaire est une mesure de performance utilisée pour évaluer la précision des prédictions probabilistes d'un modèle de classification binaire, en comparant les probabilités prédites à la véritable classe (0 ou 1) de chaque échantillon.
 
 ## Interprétation
 
