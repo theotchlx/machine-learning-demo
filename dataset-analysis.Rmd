@@ -137,21 +137,19 @@ Basically, the density is explained by the wine's contents (alcohol, sugars, sul
 
 ## Logistic binary regression
 
-Now, we will do a binary logistic regression for predictive analysis.  
-Nous voulons prédire quality_binary (mauvais vs bon) à partir des variables chimiques.
+Now, we will do a binary logistic regression for predictive analysis.
 
 First, we classify the quality as binary.
 
 ```{r}
-winequality_white <- winequality_white %>%
-  mutate(quality_binary = ifelse(quality <= 5, "bad", "good"))
+winequality_white$quality_binary <- ifelse(winequality_white$quality <= 5, "bad", "good")
 
-# On veut un facteur (category)
+# We want a factor (category)
 winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
 ```
 
 ```{r logistic_binary_regression}
-# Régression logistique binaire
+# Binary logistic regression
 logit_model <- glm(quality_binary ~ fixed.acidity + volatile.acidity + 
                                      citric.acid + residual.sugar + chlorides + 
                                      free.sulfur.dioxide + total.sulfur.dioxide + 
@@ -166,8 +164,8 @@ summary(logit_model)
 predict_prob_logit <- predict(logit_model, newdata = winequality_white, type = "response")
 
 # Pour obtenir la classe prédite (0/1) selon un cutoff=0.5
-predict_class_logit <- ifelse(predict_prob_logit > 0.5, "bon", "mauvais")
-predict_class_logit <- factor(predict_class_logit, levels = c("mauvais", "bon"))
+predict_class_logit <- ifelse(predict_prob_logit <= 0.5, "bad", "good")
+predict_class_logit <- factor(predict_class_logit, levels = c("bad", "good"))
 
 # Table de confusion
 conf_mat_logit <- table(Predicted = predict_class_logit, 
