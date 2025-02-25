@@ -148,6 +148,21 @@ winequality_white$quality_binary <- ifelse(winequality_white$quality <= 5, "bad"
 winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
 ```
 
+```{r}
+# Separate the data into training and test sets
+set.seed(123)
+trainIndex <- createDataPartition(winequality_white$quality, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+wineTrain <- winequality_white[ trainIndex,]
+wineTest  <- winequality_white[-trainIndex,]
+
+wineTrain <- wineTrain[, !(names(wineTrain) %in% c("quality_binary"))]
+
+dim(wineTrain)
+dim(wineTest)
+```
+
 ```{r logistic_binary_regression}
 # Binary logistic regression
 logit_model <- glm(quality_binary ~ fixed.acidity + volatile.acidity + 
