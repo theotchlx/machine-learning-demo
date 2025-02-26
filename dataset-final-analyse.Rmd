@@ -1,0 +1,385 @@
+
+---
+title: "Wine Quality Dataset Analysis"
+author: "BROINE Thomas, BRONSIN Baptiste, TCHILINGUIRIAN Théo"
+date: "2025-02-17"
+output: html_document
+---
+
+<style type="text/css">
+
+body, td {
+   font-size: 16px;
+}
+code.r{
+  font-size: 14px;
+}
+pre {
+  font-size: 14px
+}
+</style>
+
+```{r setup, include=FALSE}
+# Load necessary packages
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(corrplot)
+library(caret)
+library(rpart)
+library(randomForest)
+library(pROC) 
+library(rpart.plot)
+```
+
+## Introduction
+
+This report analyzes the **Wine Quality** dataset for white wines. Our goal is to explore the relationship among several physicochemical features and the wine's quality, and then build predictive models to classify or predict the quality of the wine.
+
+We will:
+
+1. **Perform exploratory data analysis** (histograms, boxplots, correlation matrix).
+2. **Convert the quality to a binary variable** (Good vs. Bad) for classification tasks.
+3. **Train and compare classification models**:
+   - Logistic Regression  
+   - Decision Tree  
+   - Random Forest  
+
+Then we will evaluate them based on several metrics (accuracy, log loss, Brier score, etc.).
+
+```{r data-loading, echo=FALSE}
+# Load the wine quality dataset (white wines)
+winequality_white <- read_delim("dataset/winequality-white.csv", 
+                                delim = ";", 
+                                escape_double = FALSE, 
+                                trim_ws = TRUE, 
+                                show_col_types = FALSE)
+
+# Normalize the column names to R-friendly format
+colnames(winequality_white) <- make.names(colnames(winequality_white))
+
+```
+
+---
+
+## 1. Exploratory Data Analysis
+
+The dataset has the following numeric features:
+
+- **fixed acidity** (g(tartaric acid)/dm^3)
+- **volatile acidity** (g(acetic acid)/dm^3)
+- **citric acid** (g/dm^3)
+- **residual sugar** (g/dm^3)
+- **chlorides** (g(sodium chloride)/dm^3)
+- **free sulfur dioxide** (mg/dm^3)
+- **total sulfur dioxide** (mg/dm^3)
+- **density** (g/cm^3)
+- **pH**
+- **sulphates** (g(potassium sulphate)/dm^3)
+- **alcohol** (vol.%)
+- **quality** (integer score)
+
+### 1.1 Quick Look at the Dataset
+
+```{r show-last-rows, echo=FALSE}
+# Display the last rows
+kable(tail(winequality_white))
+```
+
+### 1.2 Histograms of Key Variables
+
+```{r histograms, fig.width=7, fig.height=7, echo=FALSE}
+par(mfrow=c(2,2))  # 2x2 grid of plots
+
+hist(winequality_white$alcohol, 
+     main="Histogram: Alcohol", 
+     col="steelblue", 
+     xlab="Alcohol (vol.%)")
+
+hist(winequality_white$density,
+     main="Histogram: Density", 
+     col="steelblue", 
+     xlab="Density (g/cm^3)")
+
+hist(winequality_white$pH,
+     main="Histogram: pH", 
+     col="steelblue", 
+     xlab="pH")
+
+hist(winequality_white$quality, 
+     main="Histogram: Quality", 
+     col="steelblue", 
+     xlab="Quality Score")
+```
+
+We see that most wines cluster around a certain range of alcohol, density, and pH, and that the quality variable mostly ranges between 3 and 9, with many values around 5–6.
+
+### 1.3 Boxplots by Quality
+
+Below are a couple of examples: alcohol vs. wine quality, and density vs. wine quality.
+
+```{r boxplots-quality, echo=FALSE, fig.width=6, fig.height=4}
+# Alcohol vs. quality
+boxplot(alcohol ~ quality, data = winequality_white,
+        main="Alcohol Content by Quality",
+        xlab="Quality Score", ylab="Alcohol (vol.%)", 
+        col="lightgreen")
+
+```
+
+From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
+
+### 1.4 Boxplots by Density
+
+```{r boxplot-density, echo=FALSE, fig.width=6, fig.height=4}
+# Density vs. quality
+boxplot(density ~ quality, data = winequality_white, ylim=c(0.985, 1.0),
+        main="Density by Quality",
+        xlab="Quality Score", ylab="Density (g/cm^3)", 
+        col="lightblue")
+```
+
+This boxplot shows that higher-quality wines tend to have slightly lower density, but the difference is not as pronounced as with alcohol.
+
+### 1.4 Correlation Matrix
+
+From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
+
+```{r correlation, echo=FALSE, fig.width=7, fig.height=7}
+corr_matrix <- cor(winequality_white)
+corrplot(corr_matrix, method = "circle", 
+         title="Correlation among variables", 
+         mar=c(0,0,2,0))
+```
+
+This correlation plot shows clearly the correlations between variables.
+
+- A positive correlation (shades of blue) means that if one the variables' value increases, the other increases.
+- A negative correlation (shades of red) means that if one of the variables' value increases, the other decreases.
+
+Obviously, wine density is inversely correlated to alcohol content. This can be easily understood when comparing the density of ethanol to that of water:
+
+- Ethanol density : 0.7892 g/mL at 20°C.
+- Water density : 0.9982 g/mL at 20°C.
+
+And indeed, if alcohol content is higher, the density lowers, which explains the strong negative correlation.
+
+Other obvious correlations include acidity and pH, density and residual sugar content
+
+Basically, the density is explained by the wine's contents (alcohol, sugars, sulphates, chlorides). Thankfully for this small dataset, the correlation between these variables will not influence the wine quality prediction. For this small dataset, we don't need to eliminate variables for predictions.
+
+---
+
+## 2. Converting Quality to a Binary Variable
+
+In many classification tutorials on this dataset, the quality is converted to a binary label, for instance:
+
+- **Good** if quality > 5,  
+- **Bad** otherwise (quality <= 5).
+
+```{r convert-binary}
+winequality_white$quality_binary <- ifelse(winequality_white$quality <= 5, "Bad", "Good")
+winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
+
+# Distribution of classes
+table(winequality_white$quality_binary)
+```
+
+### 2.1 Visualizing Alcohol vs. Density, Colored by Binary Quality
+
+```{r scatter-plot, echo=FALSE, fig.width=6, fig.height=4}
+ggplot(winequality_white, aes(x = alcohol, y = density, color = quality_binary)) +
+  geom_point(alpha = 0.6) +
+  theme_minimal() +
+  labs(title = "Alcohol vs. Density by Quality (Good/Bad)",
+       x = "Alcohol (vol.%)",
+       y = "Density (g/cm^3)",
+       color = "Quality")
+```
+
+We can see that “Good” wines often have a slightly higher alcohol content and slightly lower density, which is consistent with the negative correlation observed.
+
+---
+
+## 2. Data Splitting into Training and Test Sets
+
+Before building classification models, we separate our data into a **training set** (80%) and a **test set** (20%). This allows us to evaluate the model performance on unseen data.
+
+```{r data-split}
+set.seed(123)  # For reproducibility
+
+trainIndex <- createDataPartition(winequality_white$quality_binary, p = 0.8, list = FALSE)
+wineTrain <- winequality_white[trainIndex, ]
+wineTest  <- winequality_white[-trainIndex, ]
+
+# For some models, we might exclude 'quality' if we only want to predict 'quality_binary'
+wineTrain_noQuality <- wineTrain %>% select(-quality)
+wineTest_noQuality  <- wineTest %>% select(-quality)
+```
+
+---
+
+## 3. Logistic Regression (Binary)
+
+### 3.1 Model Training
+
+```{r logistic-regression}
+# Build logistic regression model to predict quality_binary
+logit_model <- glm(
+  quality_binary ~ fixed.acidity + volatile.acidity + citric.acid +
+    residual.sugar + chlorides + free.sulfur.dioxide + total.sulfur.dioxide +
+    density + pH + sulphates + alcohol,
+  data = wineTrain_noQuality,
+  family = binomial
+)
+
+summary(logit_model)
+```
+
+### 3.2 Model Evaluation
+
+#### 3.2.1 Predictions and Confusion Matrix
+
+```{r logistic-predict}
+# Predict probabilities on the test set
+logit_probs <- predict(logit_model, newdata = wineTest_noQuality, type = "response")
+
+# Convert probabilities to class predictions (threshold 0.5)
+logit_pred_class <- ifelse(logit_probs >= 0.5, "Good", "Bad")
+logit_pred_class <- as.factor(logit_pred_class)
+
+# Confusion matrix
+conf_mat_logit <- confusionMatrix(data = logit_pred_class, 
+                                  reference = wineTest_noQuality$quality_binary,
+                                  positive = "Good")  # specify which level is "positive"
+conf_mat_logit
+```
+
+This output shows accuracy, sensitivity, specificity, and other metrics.
+
+#### 3.2.2 ROC Curve and AUC
+
+```{r logistic-roc, message=FALSE, warning=FALSE}
+# Convert Good/Bad to 1/0 for AUC
+test_true_num <- ifelse(wineTest_noQuality$quality_binary == "Good", 1, 0)
+
+roc_obj <- roc(test_true_num, logit_probs)
+auc_value <- auc(roc_obj)
+
+plot(roc_obj, main = paste("Logistic Regression ROC, AUC =", round(auc_value, 3)))
+```
+
+The ROC curve shows the trade-off between sensitivity and specificity. The AUC (Area Under the Curve) is a summary measure of the ROC curve, with higher values indicating better model performance.
+A result of 0.5 would indicate a model with no predictive power, while 1.0 would indicate a perfect model. So 0,798, is a good result.
+
+---
+
+## 4. Decision Tree Model
+
+### 4.1 Training the Tree
+
+```{r tree-model}
+# Build a classification tree
+tree_model <- rpart(quality_binary ~ . -quality, 
+                    data = wineTrain, 
+                    method = "class")
+
+# Print a simple text summary
+print(tree_model)
+
+# Optional: Plot the tree
+rpart.plot(tree_model)
+```
+
+### 4.2 Evaluation
+
+```{r tree-predict}
+tree_pred <- predict(tree_model, newdata = wineTest, type = "class")
+conf_mat_tree <- confusionMatrix(tree_pred, wineTest$quality_binary, positive = "Good")
+conf_mat_tree
+```
+
+We get accuracy, sensitivity, etc. for the decision tree. Although easy to interpret, a single decision tree can overfit.
+
+---
+
+## 5. Random Forest Model
+
+### 5.1 Training the Random Forest
+
+```{r random-forest}
+set.seed(123)
+rf_model <- randomForest(quality_binary ~ . -quality,
+                         data = wineTrain,
+                         ntree = 300,  # example number of trees
+                         mtry = 4)     # you could tune mtry
+
+rf_model
+```
+
+### 5.2 Variable Importance
+
+```{r var-importance, echo=FALSE}
+varImpPlot(rf_model, main="Random Forest Variable Importance")
+```
+
+### 5.3 Evaluation
+
+```{r rf-predict}
+rf_pred <- predict(rf_model, newdata = wineTest, type = "class")
+conf_mat_rf <- confusionMatrix(rf_pred, wineTest$quality_binary, positive = "Good")
+conf_mat_rf
+```
+
+We typically expect Random Forest to have higher accuracy than a single decision tree, due to ensemble averaging that reduces variance and mitigates overfitting.
+
+---
+
+## 6. Comparing Model Performance
+
+Here is a brief summary of the **Accuracy** (or other metrics) for each model:
+
+```{r compare}
+# Logistic
+acc_logit <- conf_mat_logit$overall["Accuracy"]
+
+# Decision tree
+acc_tree <- conf_mat_tree$overall["Accuracy"]
+
+# Random forest
+acc_rf   <- conf_mat_rf$overall["Accuracy"]
+
+cat("Accuracy (Logistic):", round(acc_logit, 3), "\n")
+cat("Accuracy (Decision Tree):", round(acc_tree, 3), "\n")
+cat("Accuracy (Random Forest):", round(acc_rf, 3), "\n")
+```
+
+You could also compare F1-scores, AUC, or other performance indicators if class imbalance is significant. In many cases, **Random Forest** outperforms a single tree, while logistic regression might have more interpretability via odds ratios.
+
+---
+
+## 7. Conclusion
+
+In this analysis, we:
+
+1. Explored the Wine Quality dataset, noting that higher-quality wines tend to have slightly higher alcohol levels and somewhat lower density.  
+2. Converted the quality variable into a binary label (Good vs. Bad).  
+3. Trained three classification models:
+   - Logistic Regression  
+   - Decision Tree  
+   - Random Forest  
+
+4. Compared their performance on a held-out test set.
+
+Based on our metrics (accuracy, confusion matrix, etc.), **Random Forest** generally provided better predictive performance than a single decision tree, while logistic regression was more interpretable but slightly less accurate. These results are consistent with the known benefits of ensemble methods, which aggregate multiple weak learners to produce more robust predictions.
+
+Future improvements could include:
+- Hyperparameter tuning (e.g., cross-validation grids for Random Forest or logistic regularization).  
+- Trying alternative algorithms (e.g., Gradient Boosting, SVM).  
+- Further feature engineering (transformations, polynomial terms).  
+- Handling any data imbalance (if found) via oversampling or weighting.  
+
+Overall, the Random Forest model emerges as the best choice among the tested methods for this particular dataset.
+```
+
