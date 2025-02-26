@@ -261,7 +261,7 @@ This output shows accuracy, sensitivity, specificity, and other metrics.
 
 #### 3.2.2 ROC Curve and AUC
 
-```{r logistic-roc, message=FALSE, warning=FALSE}
+```{r logistic-roc, message=FALSE, warning=FALSE, echo=FALSE}
 # Convert Good/Bad to 1/0 for AUC
 test_true_num <- ifelse(wineTest_noQuality$quality_binary == "Good", 1, 0)
 
