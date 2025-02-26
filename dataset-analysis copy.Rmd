@@ -33,27 +33,31 @@ library(pROC)
 library(rpart.plot)
 ```
 
-## 1. Introduction
+## Introduction
 
 This report analyzes the **Wine Quality** dataset for white wines. Our goal is to explore the relationship among several physicochemical features and the wine's quality, and then build predictive models to classify or predict the quality of the wine.
 
 We will:
 
-1. **Load and inspect** the dataset (check for missing values, basic summary).
-2. **Perform exploratory data analysis** (histograms, boxplots, correlation matrix).
-3. **Convert the quality to a binary variable** (Good vs. Bad) for classification tasks.
-4. **Train and compare classification models**:
+**Perform exploratory data analysis**
+
+**Convert the quality to a binary variable** 
+
+**Data Splitting into Training and Test Sets** 
+
+**Train and compare classification models**:
+
    - Logistic Regression  
    - Decision Tree  
-   - Random Forest  
+   - Random Forest
+   
+**Comparing Model Performance**
+
+**Conclusion**  
 
 Then we will evaluate them based on several metrics (accuracy, log loss, Brier score, etc.).
 
----
-
-## 2. Data Loading
-
-```{r data-loading}
+```{r data-loading, echo=FALSE}
 # Load the wine quality dataset (white wines)
 winequality_white <- read_delim("dataset/winequality-white.csv", 
                                 delim = ";", 
@@ -65,7 +69,9 @@ winequality_white <- read_delim("dataset/winequality-white.csv",
 colnames(winequality_white) <- make.names(colnames(winequality_white))
 ```
 
-## 3. Exploratory Data Analysis
+---
+
+## 1. Exploratory Data Analysis
 
 The dataset has the following numeric features:
 
@@ -82,14 +88,14 @@ The dataset has the following numeric features:
 - **alcohol** (vol.%)
 - **quality** (integer score)
 
-### 3.1 Quick Look at the Dataset
+### 1.1 Quick Look at the Dataset
 
 ```{r show-last-rows, echo=FALSE}
 # Display the last rows
 kable(tail(winequality_white))
 ```
 
-### 3.2 Histograms of Key Variables
+### 1.2 Histograms of Key Variables
 
 ```{r histograms, fig.width=7, fig.height=7, echo=FALSE}
 par(mfrow=c(2,2))  # 2x2 grid of plots
@@ -118,7 +124,7 @@ hist(winequality_white$quality,
 
 We see that most wines cluster around a certain range of alcohol, density, and pH, and that the quality variable mostly ranges between 3 and 9, with many values around 5–6.
 
-### 3.3 Boxplots by Quality
+### 1.3 Boxplots by Quality
 
 Below are a couple of examples: alcohol vs. wine quality, and density vs. wine quality.
 
@@ -133,7 +139,7 @@ boxplot(alcohol ~ quality, data = winequality_white,
 
 From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
 
-### 3.4 Boxplots by Density
+### 1.4 Boxplots by Density
 
 ```{r boxplot-density, echo=FALSE, fig.width=6, fig.height=4}
 # Density vs. quality
@@ -145,7 +151,7 @@ boxplot(density ~ quality, data = winequality_white, ylim=c(0.985, 1.0),
 
 This boxplot shows that higher-quality wines tend to have slightly lower density, but the difference is not as pronounced as with alcohol.
 
-### 3.5 Correlation Matrix
+### 1.5 Correlation Matrix
 
 From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
 
@@ -174,7 +180,7 @@ Basically, the density is explained by the wine's contents (alcohol, sugars, sul
 
 ---
 
-## 4. Converting Quality to a Binary Variable
+## 2. Converting Quality to a Binary Variable
 
 In many classification tutorials on this dataset, the quality is converted to a binary label, for instance:
 
@@ -189,9 +195,9 @@ winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
 table(winequality_white$quality_binary)
 ```
 
-### 4.1 Visualizing Alcohol vs. Density, Colored by Binary Quality
+### 2.1 Visualizing Alcohol vs. Density, Colored by Binary Quality
 
-```{r scatter-plot, echo=FALSE}
+```{r scatter-plot, echo=FALSE, fig.width=6, fig.height=4}
 ggplot(winequality_white, aes(x = alcohol, y = density, color = quality_binary)) +
   geom_point(alpha = 0.6) +
   theme_minimal() +
@@ -205,7 +211,7 @@ We can see that “Good” wines often have a slightly higher alcohol content an
 
 ---
 
-## 5. Data Splitting into Training and Test Sets
+## 3. Data Splitting into Training and Test Sets
 
 Before building classification models, we separate our data into a **training set** (80%) and a **test set** (20%). This allows us to evaluate the model performance on unseen data.
 
@@ -223,11 +229,11 @@ wineTest_noQuality  <- wineTest %>% select(-quality)
 
 ---
 
-## 6. Logistic Regression (Binary)
+## 4. Logistic Regression (Binary)
 
-### 6.1 Model Training
+### 4.1 Model Training
 
-```{r logistic-regression}
+```{r logistic-regression, echo=FALSE}
 # Build logistic regression model to predict quality_binary
 logit_model <- glm(
   quality_binary ~ fixed.acidity + volatile.acidity + citric.acid +
@@ -240,9 +246,9 @@ logit_model <- glm(
 summary(logit_model)
 ```
 
-### 6.2 Model Evaluation
+### 4.2 Model Evaluation
 
-#### 6.2.1 Predictions and Confusion Matrix
+#### 4.2.1 Predictions and Confusion Matrix
 
 ```{r logistic-predict}
 # Predict probabilities on the test set
@@ -261,9 +267,9 @@ conf_mat_logit
 
 This output shows accuracy, sensitivity, specificity, and other metrics.
 
-#### 6.2.2 ROC Curve and AUC
+#### 4.2.2 ROC Curve and AUC
 
-```{r logistic-roc, message=FALSE, warning=FALSE}
+```{r logistic-roc, message=FALSE, warning=FALSE, echo=FALSE}
 # Convert Good/Bad to 1/0 for AUC
 test_true_num <- ifelse(wineTest_noQuality$quality_binary == "Good", 1, 0)
 
@@ -271,17 +277,28 @@ roc_obj <- roc(test_true_num, logit_probs)
 auc_value <- auc(roc_obj)
 
 plot(roc_obj, main = paste("Logistic Regression ROC, AUC =", round(auc_value, 3)))
+
+# Calcul of the Log Loss for logistic regression
+
+log_loss <- function(actual, predicted) {
+  eps <- 1e-15
+  predicted <- pmax(pmin(predicted, 1 - eps), eps)
+  -mean(actual * log(predicted) + (1 - actual) * log(1 - predicted))
+}
+ll_logit <- log_loss(test_true_num, logit_probs)
+
 ```
 
 On the ROC curve, Specificity = 1 - False Positive Rate.
 
 The ROC curve shows the trade-off between sensitivity and specificity. The AUC (Area Under the Curve) is a summary measure of the ROC curve, with higher values indicating better model performance.
+A result of 0.5 would indicate a model with no predictive power, while 1.0 would indicate a perfect model. So 0,798, is a good result.
 
 ---
 
-## 7. Decision Tree Model
+## 5. Decision Tree Model
 
-### 7.1 Training the Tree
+### 5.1 Training the Tree
 
 ```{r tree-model}
 # Build a classification tree
@@ -296,12 +313,27 @@ print(tree_model)
 rpart.plot(tree_model)
 ```
 
-### 7.2 Evaluation
+### 5.2 Evaluation
 
-```{r tree-predict}
+```{r tree-predict, echo=FALSE}
 tree_pred <- predict(tree_model, newdata = wineTest, type = "class")
 conf_mat_tree <- confusionMatrix(tree_pred, wineTest$quality_binary, positive = "Good")
 conf_mat_tree
+
+# --- Calcul du Log Loss ---
+
+tree_prob <- predict(tree_model, newdata = wineTest, type = "prob")[, "Good"]
+
+log_loss <- function(actual, predicted) {
+  eps <- 1e-15
+  predicted <- pmax(pmin(predicted, 1 - eps), eps)
+  -mean(actual * log(predicted) + (1 - actual) * log(1 - predicted))
+}
+
+test_true_num <- ifelse(wineTest$quality_binary == "Good", 1, 0)
+
+ll_tree <- log_loss(test_true_num, tree_prob)
+cat("Log Loss (Decision Tree) =", round(ll_tree, 4), "\n")
 ```
 
 We get accuracy, sensitivity, etc. for the decision tree. Although easy to interpret, a single decision tree can overfit.
@@ -317,11 +349,11 @@ The decision tree model produces a limited number of probability values for this
 
 ---
 
-## 8. Random Forest Model
+## 6. Random Forest Model
 
-### 8.1 Training the Random Forest
+### 6.1 Training the Random Forest
 
-```{r random-forest}
+```{r random-forest, echo=FALSE}
 set.seed(123)
 rf_model <- randomForest(quality_binary ~ . -quality,
                          data = wineTrain,
@@ -331,23 +363,30 @@ rf_model <- randomForest(quality_binary ~ . -quality,
 rf_model
 ```
 
-### 8.2 Variable Importance
+### 6.2 Variable Importance
 
 ```{r var-importance, echo=FALSE}
 varImpPlot(rf_model, main="Random Forest Variable Importance")
 ```
 
-### 8.3 Evaluation
+### 6.3 Evaluation
 
-```{r rf-predict}
+```{r rf-predict, echo=FALSE}
 rf_pred <- predict(rf_model, newdata = wineTest, type = "class")
 conf_mat_rf <- confusionMatrix(rf_pred, wineTest$quality_binary, positive = "Good")
 conf_mat_rf
+
+# Calcul of the Log Loss 
+
+rf_prob <- predict(rf_model, newdata = wineTest, type = "prob")[, "Good"]
+ll_rf <- log_loss(test_true_num, rf_prob)
+cat("Log Loss (Random Forest) =", round(ll_rf, 4), "\n")
+
 ```
 
 We typically expect Random Forest to have higher accuracy than a single decision tree, due to ensemble averaging that reduces variance and mitigates overfitting.
 
-```{r}
+```{r, echo=FALSE}
 rf_prob <- predict(rf_model, newdata = wineTest, type = "prob")[, "Good"]
 roc_curve_rf <- roc(wineTest$quality_binary, rf_prob, levels = c("Bad", "Good"), direction = "<")
 auc_value <- auc(roc_curve_rf)
@@ -356,11 +395,11 @@ plot(roc_curve_rf, main = paste("ROC Curve for Random Forest", round(auc_value, 
 
 ---
 
-## 9. Comparing Model Performance
+## 7. Comparing Model Performance
 
 Here is a brief summary of the **Accuracy** (or other metrics) for each model:
 
-```{r compare}
+```{r compare, echo=FALSE}
 # Logistic
 acc_logit <- conf_mat_logit$overall["Accuracy"]
 
@@ -375,11 +414,18 @@ cat("Accuracy (Decision Tree):", round(acc_tree, 3), "\n")
 cat("Accuracy (Random Forest):", round(acc_rf, 3), "\n")
 ```
 
-We could also compare F1-scores, AUC, or other performance indicators. Although we know the random forest model often outperforms a single tree, while logistic regression may be more performant depending on the variables and how many of them are explanatory.
+We can compare also **Logs Loss** for each model:
+
+```{r compare-log-loss, echo=FALSE}
+cat("Log Loss (Logistic):", round(ll_logit, 4), "\n")
+cat("Log Loss (Decision Tree):", round(ll_tree, 4), "\n")
+cat("Log Loss (Random Forest):", round(ll_rf, 4), "\n")
+
+```
 
 ---
 
-## 10. Conclusion
+## 8. Conclusion
 
 In this analysis, we:
 
