@@ -191,7 +191,7 @@ table(winequality_white$quality_binary)
 
 ### 4.1 Visualizing Alcohol vs. Density, Colored by Binary Quality
 
-```{r scatter-plot, echo=FALSE, fig.width=6, fig.height=4}
+```{r scatter-plot, echo=FALSE}
 ggplot(winequality_white, aes(x = alcohol, y = density, color = quality_binary)) +
   geom_point(alpha = 0.6) +
   theme_minimal() +
@@ -312,6 +312,8 @@ roc_curve_tree <- roc(wineTest$quality_binary, tree_prob, levels = c("Bad", "Goo
 auc_value <- auc(roc_curve_tree)
 plot(roc_curve_tree, main = paste("ROC Curve for Decision Tree", round(auc_value, 3)))
 ```
+
+The decision tree model produces a limited number of probability values for this classification, which explain why the ROC curve looks so angular.
 
 ---
 
