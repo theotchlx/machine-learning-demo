@@ -6,6 +6,19 @@ date: "2025-02-17"
 output: html_document
 ---
 
+<style type="text/css">
+
+body, td {
+   font-size: 16px;
+}
+code.r{
+  font-size: 14px;
+}
+pre {
+  font-size: 14px
+}
+</style>
+
 ```{r setup, include=FALSE}
 # Load necessary packages
 library(readr)
@@ -16,8 +29,8 @@ library(corrplot)
 library(caret)
 library(rpart)
 library(randomForest)
-library(pROC)       # For ROC and AUC
-library(rpart.plot) # For decision tree plotting
+library(pROC)
+library(rpart.plot)
 ```
 
 ## 1. Introduction
@@ -105,7 +118,7 @@ hist(winequality_white$quality,
 
 We see that most wines cluster around a certain range of alcohol, density, and pH, and that the quality variable mostly ranges between 3 and 9, with many values around 5–6.
 
-### 2.3 Boxplots by Quality
+### 3.3 Boxplots by Quality
 
 Below are a couple of examples: alcohol vs. wine quality, and density vs. wine quality.
 
@@ -120,7 +133,7 @@ boxplot(alcohol ~ quality, data = winequality_white,
 
 From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
 
-### 2.4 Boxplots by Density
+### 3.4 Boxplots by Density
 
 ```{r boxplot-density, echo=FALSE, fig.width=6, fig.height=4}
 # Density vs. quality
@@ -132,7 +145,7 @@ boxplot(density ~ quality, data = winequality_white, ylim=c(0.985, 1.0),
 
 This boxplot shows that higher-quality wines tend to have slightly lower density, but the difference is not as pronounced as with alcohol.
 
-### 3.4 Correlation Matrix
+### 3.5 Correlation Matrix
 
 From this boxplot, higher wine qualities tend to have slightly higher alcohol levels, but we also see that the number of samples at higher quality is relatively small.
 
@@ -168,7 +181,7 @@ In many classification tutorials on this dataset, the quality is converted to a 
 - **Good** if quality > 5,  
 - **Bad** otherwise (quality <= 5).
 
-```{r convert-binary}
+```{r convert-binary, echo=FALSE}
 winequality_white$quality_binary <- ifelse(winequality_white$quality <= 5, "Bad", "Good")
 winequality_white$quality_binary <- as.factor(winequality_white$quality_binary)
 
@@ -248,7 +261,7 @@ conf_mat_logit
 
 This output shows accuracy, sensitivity, specificity, and other metrics.
 
-#### 6.2.2 ROC Curve and AUC (Optional)
+#### 6.2.2 ROC Curve and AUC
 
 ```{r logistic-roc, message=FALSE, warning=FALSE}
 # Convert Good/Bad to 1/0 for AUC
@@ -259,6 +272,10 @@ auc_value <- auc(roc_obj)
 
 plot(roc_obj, main = paste("Logistic Regression ROC, AUC =", round(auc_value, 3)))
 ```
+
+On the ROC curve, Specificity = 1 - False Positive Rate.
+
+The ROC curve shows the trade-off between sensitivity and specificity. The AUC (Area Under the Curve) is a summary measure of the ROC curve, with higher values indicating better model performance.
 
 ---
 
@@ -275,7 +292,7 @@ tree_model <- rpart(quality_binary ~ . -quality,
 # Print a simple text summary
 print(tree_model)
 
-# Optional: Plot the tree
+# Plot the tree
 rpart.plot(tree_model)
 ```
 
@@ -289,6 +306,13 @@ conf_mat_tree
 
 We get accuracy, sensitivity, etc. for the decision tree. Although easy to interpret, a single decision tree can overfit.
 
+```{r tree-roc}
+tree_prob <- predict(tree_model, newdata = wineTest, type = "prob")[, "Good"]
+roc_curve_tree <- roc(wineTest$quality_binary, tree_prob, levels = c("Bad", "Good"), direction = "<")
+auc_value <- auc(roc_curve_tree)
+plot(roc_curve_tree, main = paste("ROC Curve for Decision Tree", round(auc_value, 3)))
+```
+
 ---
 
 ## 8. Random Forest Model
@@ -299,8 +323,8 @@ We get accuracy, sensitivity, etc. for the decision tree. Although easy to inter
 set.seed(123)
 rf_model <- randomForest(quality_binary ~ . -quality,
                          data = wineTrain,
-                         ntree = 300,  # example number of trees
-                         mtry = 4)     # you could tune mtry
+                         ntree = 300,  # nb of trees
+                         mtry = 4)
 
 rf_model
 ```
@@ -320,6 +344,13 @@ conf_mat_rf
 ```
 
 We typically expect Random Forest to have higher accuracy than a single decision tree, due to ensemble averaging that reduces variance and mitigates overfitting.
+
+```{r}
+rf_prob <- predict(rf_model, newdata = wineTest, type = "prob")[, "Good"]
+roc_curve_rf <- roc(wineTest$quality_binary, rf_prob, levels = c("Bad", "Good"), direction = "<")
+auc_value <- auc(roc_curve_rf)
+plot(roc_curve_rf, main = paste("ROC Curve for Random Forest", round(auc_value, 3)))
+```
 
 ---
 
@@ -342,7 +373,7 @@ cat("Accuracy (Decision Tree):", round(acc_tree, 3), "\n")
 cat("Accuracy (Random Forest):", round(acc_rf, 3), "\n")
 ```
 
-You could also compare F1-scores, AUC, or other performance indicators if class imbalance is significant. In many cases, **Random Forest** outperforms a single tree, while logistic regression might have more interpretability via odds ratios.
+We could also compare F1-scores, AUC, or other performance indicators. Although we know the random forest model often outperforms a single tree, while logistic regression may be more performant depending on the variables and how many of them are explanatory.
 
 ---
 
@@ -359,7 +390,7 @@ In this analysis, we:
 
 4. Compared their performance on a held-out test set.
 
-Based on our metrics (accuracy, confusion matrix, etc.), **Random Forest** generally provided better predictive performance than a single decision tree, while logistic regression was more interpretable but slightly less accurate. These results are consistent with the known benefits of ensemble methods, which aggregate multiple weak learners to produce more robust predictions.
+Based on our metrics (accuracy, confusion matrix, etc.), the **Random Forest** model generally provided better predictive performance than a single decision tree, while logistic regression was more interpretable but slightly less accurate. These results are consistent with the known benefits of ensemble methods, which aggregate multiple weak learners to produce more robust predictions.
 
 Future improvements could include:
 - Hyperparameter tuning (e.g., cross-validation grids for Random Forest or logistic regularization).  
@@ -368,5 +399,3 @@ Future improvements could include:
 - Handling any data imbalance (if found) via oversampling or weighting.  
 
 Overall, the Random Forest model emerges as the best choice among the tested methods for this particular dataset.
-```
-
