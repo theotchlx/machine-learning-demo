@@ -224,7 +224,7 @@ wineTest_noQuality  <- wineTest %>% select(-quality)
 
 ### 3.1 Model Training
 
-```{r logistic-regression}
+```{r logistic-regression, echo=FALSE}
 # Build logistic regression model to predict quality_binary
 logit_model <- glm(
   quality_binary ~ fixed.acidity + volatile.acidity + citric.acid +
@@ -241,7 +241,7 @@ summary(logit_model)
 
 #### 3.2.1 Predictions and Confusion Matrix
 
-```{r logistic-predict}
+```{r logistic-predict, echo=FALSE}
 # Predict probabilities on the test set
 logit_probs <- predict(logit_model, newdata = wineTest_noQuality, type = "response")
 
@@ -279,7 +279,7 @@ A result of 0.5 would indicate a model with no predictive power, while 1.0 would
 
 ### 4.1 Training the Tree
 
-```{r tree-model}
+```{r tree-model, echo=FALSE}
 # Build a classification tree
 tree_model <- rpart(quality_binary ~ . -quality, 
                     data = wineTrain, 
@@ -295,7 +295,7 @@ rpart.plot(tree_model)
 
 ### 4.2 Evaluation
 
-```{r tree-predict}
+```{r tree-predict, echo=FALSE}
 
 # Decision Tree evaluation
 
@@ -327,7 +327,7 @@ The Decision Tree model has an accuracy of 0.75, which is lower than the Logisti
 
 ### 5.1 Training the Random Forest
 
-```{r random-forest}
+```{r random-forest, echo=FALSE}
 set.seed(123)
 rf_model <- randomForest(quality_binary ~ . -quality,
                          data = wineTrain,
@@ -345,7 +345,7 @@ varImpPlot(rf_model, main="Random Forest Variable Importance")
 
 ### 5.3 Evaluation
 
-```{r rf-predict}
+```{r rf-predict, echo=FALSE}
 # Random Forest evaluation
 rf_pred <- predict(rf_model, newdata = wineTest, type = "class")
 conf_mat_rf <- confusionMatrix(rf_pred, wineTest$quality_binary, positive = "Good")
@@ -361,7 +361,7 @@ We typically expect Random Forest to have higher accuracy than a single decision
 
 Here is a brief summary of the **Accuracy** (or other metrics) for each model:
 
-```{r compare}
+```{r compare, echo=FALSE}
 # Logistic
 acc_logit <- conf_mat_logit$overall["Accuracy"]
 
