@@ -292,15 +292,34 @@ print(tree_model)
 rpart.plot(tree_model)
 ```
 
+
 ### 4.2 Evaluation
 
 ```{r tree-predict}
+
+# Decision Tree evaluation
+
 tree_pred <- predict(tree_model, newdata = wineTest, type = "class")
 conf_mat_tree <- confusionMatrix(tree_pred, wineTest$quality_binary, positive = "Good")
 conf_mat_tree
+
+# --- Calcul du Log Loss ---
+
+tree_prob <- predict(tree_model, newdata = wineTest, type = "prob")[, "Good"]
+
+log_loss <- function(actual, predicted) {
+  eps <- 1e-15
+  predicted <- pmax(pmin(predicted, 1 - eps), eps)
+  -mean(actual * log(predicted) + (1 - actual) * log(1 - predicted))
+}
+
+test_true_num <- ifelse(wineTest$quality_binary == "Good", 1, 0)
+
+ll_tree <- log_loss(test_true_num, tree_prob)
+cat("Log Loss (Decision Tree) =", round(ll_tree, 4), "\n")
 ```
 
-We get accuracy, sensitivity, etc. for the decision tree. Although easy to interpret, a single decision tree can overfit.
+The Decision Tree model has an accuracy of 0.75, which is lower than the Logistic Regression model. The Log Loss is 0.54, which is higher than the Logistic Regression model.
 
 ---
 
@@ -327,9 +346,11 @@ varImpPlot(rf_model, main="Random Forest Variable Importance")
 ### 5.3 Evaluation
 
 ```{r rf-predict}
+# Random Forest evaluation
 rf_pred <- predict(rf_model, newdata = wineTest, type = "class")
 conf_mat_rf <- confusionMatrix(rf_pred, wineTest$quality_binary, positive = "Good")
 conf_mat_rf
+
 ```
 
 We typically expect Random Forest to have higher accuracy than a single decision tree, due to ensemble averaging that reduces variance and mitigates overfitting.
@@ -381,5 +402,4 @@ Future improvements could include:
 - Handling any data imbalance (if found) via oversampling or weighting.  
 
 Overall, the Random Forest model emerges as the best choice among the tested methods for this particular dataset.
-```
 
