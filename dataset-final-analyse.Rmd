@@ -254,6 +254,7 @@ conf_mat_logit <- confusionMatrix(data = logit_pred_class,
                                   reference = wineTest_noQuality$quality_binary,
                                   positive = "Good")  # specify which level is "positive"
 conf_mat_logit
+
 ```
 
 This output shows accuracy, sensitivity, specificity, and other metrics.
@@ -268,6 +269,16 @@ roc_obj <- roc(test_true_num, logit_probs)
 auc_value <- auc(roc_obj)
 
 plot(roc_obj, main = paste("Logistic Regression ROC, AUC =", round(auc_value, 3)))
+
+# Calcul of the Log Loss for logistic regression
+
+log_loss <- function(actual, predicted) {
+  eps <- 1e-15
+  predicted <- pmax(pmin(predicted, 1 - eps), eps)
+  -mean(actual * log(predicted) + (1 - actual) * log(1 - predicted))
+}
+ll_logit <- log_loss(test_true_num, logit_probs)
+
 ```
 
 The ROC curve shows the trade-off between sensitivity and specificity. The AUC (Area Under the Curve) is a summary measure of the ROC curve, with higher values indicating better model performance.
@@ -320,6 +331,7 @@ cat("Log Loss (Decision Tree) =", round(ll_tree, 4), "\n")
 ```
 
 The Decision Tree model has an accuracy of 0.75, which is lower than the Logistic Regression model. The Log Loss is 0.54, which is higher than the Logistic Regression model.
+It is important to note that the Decision Tree model is more interpretable than the Logistic Regression model, as it can be visualized and understood more easily.
 
 ---
 
@@ -351,6 +363,12 @@ rf_pred <- predict(rf_model, newdata = wineTest, type = "class")
 conf_mat_rf <- confusionMatrix(rf_pred, wineTest$quality_binary, positive = "Good")
 conf_mat_rf
 
+# Calcul of the Log Loss 
+
+rf_prob <- predict(rf_model, newdata = wineTest, type = "prob")[, "Good"]
+ll_rf <- log_loss(test_true_num, rf_prob)
+cat("Log Loss (Random Forest) =", round(ll_rf, 4), "\n")
+
 ```
 
 We typically expect Random Forest to have higher accuracy than a single decision tree, due to ensemble averaging that reduces variance and mitigates overfitting.
@@ -376,7 +394,14 @@ cat("Accuracy (Decision Tree):", round(acc_tree, 3), "\n")
 cat("Accuracy (Random Forest):", round(acc_rf, 3), "\n")
 ```
 
-You could also compare F1-scores, AUC, or other performance indicators if class imbalance is significant. In many cases, **Random Forest** outperforms a single tree, while logistic regression might have more interpretability via odds ratios.
+We can compare also **Logs Loss** for each model:
+
+```{r compare-log-loss, echo=FALSE}
+cat("Log Loss (Logistic):", round(ll_logit, 4), "\n")
+cat("Log Loss (Decision Tree):", round(ll_tree, 4), "\n")
+cat("Log Loss (Random Forest):", round(ll_rf, 4), "\n")
+
+```
 
 ---
 
